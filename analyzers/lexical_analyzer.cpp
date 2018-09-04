@@ -1,5 +1,5 @@
 #include <bits/stdc++.h>
-#include "analisador_lexico.h"
+#include "lexycal_analyzer.h"
 
 using namespace std;
 
