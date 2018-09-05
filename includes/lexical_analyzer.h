@@ -24,6 +24,8 @@ typedef enum
     VAR,
     WHILE,
 
+    RETURN,
+
     // symbols
     COLON,
     SEMI_COLON,
@@ -56,7 +58,7 @@ typedef enum
     CHARACTER,
     NUMERAL,
     STRINGVAL,
-    ID,
+    IDT,
 
     // unkown token
     UNKNOWN

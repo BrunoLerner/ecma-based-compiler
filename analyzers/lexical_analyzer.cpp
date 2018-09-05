@@ -6,6 +6,9 @@ using namespace std;
 int currentLine = 1;
 FILE *programToCompile;
 
+map<string, t_token> reserved;
+map<string, int> identifiers;
+
 t_token nextToken()
 {
 
@@ -292,10 +295,50 @@ char *getStringConst(int n)
     return vConsts[n]->_.sVal;
 };
 
-int searchName(string name){
-
+int searchName(string name)
+{
+    if (identifiers.count(name) == 0)
+    {
+        identifiers[name] = identifiers.size();
+    }
+    return identifiers[name];
 };
 
-t_token searchKeyWord(string name){
+t_token searchKeyWord(string name)
+{
+    if (reserved.empty())
+    {
+        initReservedMap();
+    }
 
+    if (reserved.count(name))
+    {
+        return reserved[name];
+    }
+
+    // if it is not a reserved word, it is an identifier
+    return IDT;
 };
+
+void initReservedMap()
+{
+    reserved["array"] = ARRAY;
+    reserved["boolean"] = BOOLEAN;
+    reserved["break"] = BREAK;
+    reserved["char"] = CHAR;
+    reserved["continue"] = CONTINUE;
+    reserved["do"] = DO;
+    reserved["else"] = ELSE;
+    reserved["false"] = FALSE;
+    reserved["function"] = FUNCTION;
+    reserved["if"] = IF;
+    reserved["integer"] = INTEGER;
+    reserved["of"] = OF;
+    reserved["string"] = STRING;
+    reserved["struct"] = STRUCT;
+    reserved["true"] = TRUE;
+    reserved["type"] = TYPE;
+    reserved["var"] = VAR;
+    reserved["while"] = WHILE;
+    reserved["return"] = RETURN;
+}
