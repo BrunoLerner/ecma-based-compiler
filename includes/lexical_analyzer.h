@@ -77,11 +77,11 @@ t_const vConsts[MAX_CONSTS];
 int nNumConsts = 0;
 char nextChar = ‘\x20‘;
 
-t_token searchKeyword(char *name) {}
-int searchName(char *name) {}
+t_token searchKeyword(string name) {}
+int searchName(string name) {}
 int addCharConst(char c);
 int addIntConst(int n);
-int addStringConst(char *s);
+int addStringConst(string s);
 char getCharConst(int n);
 int getIntConst(int n);
 char *getStringConst(int n);

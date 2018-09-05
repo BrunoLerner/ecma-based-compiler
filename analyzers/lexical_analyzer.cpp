@@ -3,6 +3,9 @@
 
 using namespace std;
 
+int currentLine = 1;
+FILE *programToCompile;
+
 t_token nextToken()
 {
 
@@ -236,6 +239,16 @@ t_token nextToken()
     return token;
 }
 
+char readChar()
+{
+    char read = fgetc(programToCompile);
+    if (read == '\n')
+        currentLine++;
+    if (read != EOF)
+        return read;
+    return '\0';
+};
+
 int addCharConst(char c)
 {
     t_const *constToAdd = (t_const *)malloc(sizeof(t_const));
@@ -254,11 +267,35 @@ int addIntConst(int n)
     return nNumConsts - 1;
 };
 
-int addStringConst(char *s)
+int addStringConst(string s)
 {
     t_const *constToAdd = (t_const *)malloc(sizeof(t_const));
     constToAdd->_.sVal = new string();
+    *(constToAdd->_.sVal) = s;
     vConsts[nNumConsts] = constToAdd;
     nNumConsts++;
     return nNumConsts - 1;
+};
+
+char getCharConst(int n)
+{
+    return vConsts[n]->_.cVal;
+};
+
+int getIntConst(int n)
+{
+    return vConsts[n]->_.nVal;
+};
+
+char *getStringConst(int n)
+{
+    return vConsts[n]->_.sVal;
+};
+
+int searchName(string name){
+
+};
+
+t_token searchKeyWord(string name){
+
 };
