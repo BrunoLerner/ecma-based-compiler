@@ -1,5 +1,5 @@
-#include <bits/stdc++.h>
-#include "lexycal_analyzer.h"
+#include <map>
+#include "./../includes/lexical.h"
 
 using namespace std;
 
