@@ -1,13 +1,14 @@
 #include <bits/stdc++.h>
 #include "lexycal_analyzer.h"
+#include <errno.h>
 
 using namespace std;
 
 int main(int argc, char const *argv[])
 {
-    programToCompile = fopen(input_file_name.c_str(), "r");
+    programToCompile = fopen("program.txt", "r");
     if (!programToCompile)
     {
-        fprintf(stderr, "Failed to open %s: %s\n", "programToCompile", strerror(errno));
+        fprintf(stderr, "Failed to open program: %s\n", strerror(errno));
     }
 };
