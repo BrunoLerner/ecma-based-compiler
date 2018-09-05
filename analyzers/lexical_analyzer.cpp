@@ -1,4 +1,5 @@
 #include <map>
+#include <iostream>
 #include "./../includes/lexical.h"
 
 using namespace std;
@@ -6,11 +7,10 @@ using namespace std;
 int currentLine = 1;
 FILE *programToCompile;
 
-map<string, t_token> reserved;
-map<string, int> identifiers;
-
 t_token nextToken()
 {
+    t_token token;
+    int tokenSecundario;
 
     while (isspace(nextChar))
     {
@@ -26,7 +26,7 @@ t_token nextToken()
             nextChar = readChar();
         } while (isalnum(nextChar) || nextChar == '_');
 
-        token = searchKeyWord(text);
+        token = searchKeyword(text);
 
         if (token == IDT)
             tokenSecundario = searchName(text);
@@ -256,7 +256,7 @@ int addCharConst(char c)
 {
     t_const *constToAdd = (t_const *)malloc(sizeof(t_const));
     constToAdd->_.cVal = c;
-    vConsts[nNumConsts] = constToAdd;
+    vConsts[nNumConsts] = *constToAdd;
     nNumConsts++;
     return nNumConsts - 1;
 };
@@ -265,7 +265,7 @@ int addIntConst(int n)
 {
     t_const *constToAdd = (t_const *)malloc(sizeof(t_const));
     constToAdd->_.nVal = n;
-    vConsts[nNumConsts] = constToAdd;
+    vConsts[nNumConsts] = *constToAdd;
     nNumConsts++;
     return nNumConsts - 1;
 };
@@ -274,25 +274,25 @@ int addStringConst(string s)
 {
     t_const *constToAdd = (t_const *)malloc(sizeof(t_const));
     constToAdd->_.sVal = new string();
-    *(constToAdd->_.sVal) = s;
-    vConsts[nNumConsts] = constToAdd;
+    constToAdd->_.sVal = &s;
+    vConsts[nNumConsts] = *constToAdd;
     nNumConsts++;
     return nNumConsts - 1;
 };
 
 char getCharConst(int n)
 {
-    return vConsts[n]->_.cVal;
+    return vConsts[n]._.cVal;
 };
 
 int getIntConst(int n)
 {
-    return vConsts[n]->_.nVal;
+    return vConsts[n]._.nVal;
 };
 
-char *getStringConst(int n)
+string getStringConst(int n)
 {
-    return vConsts[n]->_.sVal;
+    return *(vConsts[n]._.sVal);
 };
 
 int searchName(string name)
@@ -304,7 +304,7 @@ int searchName(string name)
     return identifiers[name];
 };
 
-t_token searchKeyWord(string name)
+t_token searchKeyword(string name)
 {
     if (reserved.empty())
     {
@@ -319,26 +319,3 @@ t_token searchKeyWord(string name)
     // if it is not a reserved word, it is an identifier
     return IDT;
 };
-
-void initReservedMap()
-{
-    reserved["array"] = ARRAY;
-    reserved["boolean"] = BOOLEAN;
-    reserved["break"] = BREAK;
-    reserved["char"] = CHAR;
-    reserved["continue"] = CONTINUE;
-    reserved["do"] = DO;
-    reserved["else"] = ELSE;
-    reserved["false"] = FALSE;
-    reserved["function"] = FUNCTION;
-    reserved["if"] = IF;
-    reserved["integer"] = INTEGER;
-    reserved["of"] = OF;
-    reserved["string"] = STRING;
-    reserved["struct"] = STRUCT;
-    reserved["true"] = TRUE;
-    reserved["type"] = TYPE;
-    reserved["var"] = VAR;
-    reserved["while"] = WHILE;
-    reserved["return"] = RETURN;
-}

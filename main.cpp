@@ -1,4 +1,3 @@
-#include <bits/stdc++.h>
 #include "lexycal_analyzer.h"
 #include <errno.h>
 

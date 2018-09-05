@@ -1,5 +1,9 @@
-#include <bits/stdc++.h>
+#ifndef LEXICAL_H
+#define LEXICAL_H
 #define MAX_CONSTS 500
+#include <string>
+#include <map>
+#include <iostream>
 
 using namespace std;
 
@@ -61,8 +65,12 @@ typedef enum
     IDT,
 
     // unkown token
-    UNKNOWN
+    UNKNOWN,
+    END
 } t_token;
+
+map<string, t_token> reserved;
+map<string, int> identifiers;
 
 typedef struct
 {
@@ -71,21 +79,45 @@ typedef struct
     union {
         char cVal;
         int nVal;
-        char *sVal;
+        string *sVal;
     } _;
 } t_const;
 
 t_const vConsts[MAX_CONSTS];
 int nNumConsts = 0;
-char nextChar = ‘\x20‘;
+char nextChar = '\x20';
 
-t_token searchKeyword(string name) {}
-int searchName(string name) {}
+t_token searchKeyword(string name);
+int searchName(string name);
 int addCharConst(char c);
 int addIntConst(int n);
 int addStringConst(string s);
 char getCharConst(int n);
 int getIntConst(int n);
-char *getStringConst(int n);
+string getStringConst(int n);
 char readChar();
 t_token nextToken();
+
+void initReservedMap()
+{
+    reserved["array"] = ARRAY;
+    reserved["boolean"] = BOOLEAN;
+    reserved["break"] = BREAK;
+    reserved["char"] = CHAR;
+    reserved["continue"] = CONTINUE;
+    reserved["do"] = DO;
+    reserved["else"] = ELSE;
+    reserved["false"] = FALSE;
+    reserved["function"] = FUNCTION;
+    reserved["if"] = IF;
+    reserved["integer"] = INTEGER;
+    reserved["of"] = OF;
+    reserved["string"] = STRING;
+    reserved["struct"] = STRUCT;
+    reserved["true"] = TRUE;
+    reserved["type"] = TYPE;
+    reserved["var"] = VAR;
+    reserved["while"] = WHILE;
+    reserved["return"] = RETURN;
+}
+#endif
