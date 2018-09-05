@@ -235,3 +235,30 @@ t_token nextToken()
     }
     return token;
 }
+
+int addCharConst(char c)
+{
+    t_const *constToAdd = (t_const *)malloc(sizeof(t_const));
+    constToAdd->_.cVal = c;
+    vConsts[nNumConsts] = constToAdd;
+    nNumConsts++;
+    return nNumConsts - 1;
+};
+
+int addIntConst(int n)
+{
+    t_const *constToAdd = (t_const *)malloc(sizeof(t_const));
+    constToAdd->_.nVal = n;
+    vConsts[nNumConsts] = constToAdd;
+    nNumConsts++;
+    return nNumConsts - 1;
+};
+
+int addStringConst(char *s)
+{
+    t_const *constToAdd = (t_const *)malloc(sizeof(t_const));
+    constToAdd->_.sVal = new string();
+    vConsts[nNumConsts] = constToAdd;
+    nNumConsts++;
+    return nNumConsts - 1;
+};
