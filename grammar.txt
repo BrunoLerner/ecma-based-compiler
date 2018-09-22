@@ -42,11 +42,13 @@ S  → ‘if’ ‘(‘ E ‘)’ S
 | LV = E ‘;’
 | ‘break’ ‘;’
 | ‘continue’ ‘;’
+|  return LI ';'
 
 
 E  → E ‘&&’ L
 | E ‘||’ L
 | L
+
 
 L →  L ‘<’ R
 | L ‘>’ R
