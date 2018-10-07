@@ -24,7 +24,7 @@ DF →   ‘function’ ID ’(‘ LP ‘)’ ‘:’ T B
 LP  → LP ‘,’ ID ‘:’ T
 | ID ‘:’ T
 
-B →  ‘{‘ LDV LS ‘}’
+B →  ‘{‘ LDV LS return E‘}’
 LDV → LDV DV
 | DV
 LS →  LS S
@@ -42,7 +42,7 @@ S  → ‘if’ ‘(‘ E ‘)’ S
 | LV = E ‘;’
 | ‘break’ ‘;’
 | ‘continue’ ‘;’
-|  return LI ';'
+
 
 
 E  → E ‘&&’ L

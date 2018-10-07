@@ -27,7 +27,6 @@ typedef enum
     TYPE,
     VAR,
     WHILE,
-
     RETURN,
 
     // symbols
