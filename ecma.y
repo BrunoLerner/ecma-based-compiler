@@ -1,11 +1,44 @@
 %{
     // declaracoes em C que auxiliam nas ações das regras de derivacao
-    void yyerror(char *s);
+    void yyerror(const char *s);
     #include<stdio.h>
-    #include<stdlib.h>    
+    #include<stdlib.h> 
+    #include "./includes/helperFuncs.h"   
 
 %}
+%token ARRAY BOOLEAN BREAK CHAR CONTINUE DO ELSE FALSE FUNCTION IF INTEGER OF STRING STRUCT TRUE TYPE VAR WHILE RETURN 
+%token COLON SEMI_COLON COMMA EQUALS LEFT_SQUARE RIGHT_SQUARE LEFT_BRACES RIGHT_BRACES LEFT_PARENTHESIS RIGHT_PARENTHESIS AND OR LESS_THAN GREATER_THAN LESS_OR_EQUAL GREATER_OR_EQUAL NOT_EQUAL EQUAL_EQUAL PLUS PLUS_PLUS MINUS MINUS_MINUS TIMES DIVIDE DOT NOT 
+%token CHARACTER NUMERAL STRINGVAL IDT ASSIGN
+%token UNKNOWN END
+%token chr num str id true false
 
+%token <num> number
+%token <id> identifier
+%union{
+	int nName;
+	struct object * pNext;
+	t_kind eKind;
+	union {
+		struct {
+			struct object *pType;
+		  } Var, Param, Field;
+		struct {
+			struct object *pRetType;
+			struct object *pParams;
+		} Function;
+		struct {
+			struct object *pElemType; int nNumElems;
+		} Array;
+		struct {
+			struct object *pFields;
+		} Struct;
+		struct {
+			struct object *pBaseType;
+		} Alias;
+	}_;
+}
+%token <kind> NO_KIND_DEF_ VAR_ PARAM_ FUNCTION_ FIELD_ ARRAY_TYPE_ STRUCT_TYPE_ ALIAS_TYPE_ SCALAR_TYPE_  UNIVERSAL_
+%right "then" ELSE
 %start P
 
 %%
@@ -28,13 +61,17 @@ T : INTEGER {$<type>$ = TYPE_INTEGER}
   | STRING  {$<type>$ = TYPE_STRING}
   | IDU     {$<type>$ = $<type>1};
 
-DT : type IDD ASSIGN array LEFT_SQUARE NUM RIGHT_SQUARE OF T 
-   | type IDD ASSIGN STRUCT NB LEFT_BRACES DC RIGHT_BRACES {
+NB : {
+  NewBlock();
+};
+DT : TYPE IDD ASSIGN ARRAY LEFT_SQUARE NUM RIGHT_SQUARE OF T 
+   | TYPE IDD ASSIGN STRUCT NB LEFT_BRACES DC RIGHT_BRACES {
      EndBlock();
    }
-   | type IDD ASSIGN T ;
+   | TYPE IDD ASSIGN T ;
 DC : DC SEMI_COLON LI COLON T 
    | LI COLON T ;
+
 DF : FUNCTION IDD NB LEFT_PARENTHESIS LP RIGHT_PARENTHESIS COLON T B {
   $<type>$ = $<type>7
   EndBlock();
@@ -102,14 +139,14 @@ LV : LV DOT IDU
    | IDU ;
 IDD : id;
 IDU : id;
-TRUE: true {
+/* TRUE: true {
 	$<type>$ = pBool;
 	$<val>$  = true;
 };
 FALSE: false {
 	$<type>$ = pBool;
 	$<val>$  = false;
-};
+}; */
 CHR: chr {
 	$<type>$ = pChar;
 	$<pos>$  = tokenSecundario;
@@ -126,3 +163,14 @@ NUM: num {
 	$<val>$  = getIntConst(NUM.pos);
 };
 %%
+
+void yyerror(const char *error) {
+	fprintf(stderr,"error: %s\n",error);
+}
+ 
+int yywrap() {return 1;} 
+  
+int main(int argc, char **argv){
+	yyparse();
+	return 0;
+} 

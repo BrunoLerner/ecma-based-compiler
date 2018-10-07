@@ -1,5 +1,6 @@
 %{
-  #include<lexical.h>    
+  #include<lexical.h>  
+  #include"y.tab.h"
 %}
 
 %%

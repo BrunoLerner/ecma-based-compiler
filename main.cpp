@@ -1,4 +1,4 @@
-#include "lexycal_analyzer.cpp"
+#include "./lexycal_analyzer.cpp"
 #include <errno.h>
 
 using namespace std;
