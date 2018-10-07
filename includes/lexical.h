@@ -1,9 +1,9 @@
 #ifndef LEXICAL_H
 #define LEXICAL_H
 #define MAX_CONSTS 500
-#include <string>
-#include <map>
+#include <string.h>
 #include <iostream>
+#include <map>
 
 using namespace std;
 

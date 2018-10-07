@@ -1,42 +1,73 @@
 %{
     // declaracoes em C que auxiliam nas ações das regras de derivacao
-    void yyerror(const char *s);
     #include<stdio.h>
     #include<stdlib.h> 
-    #include "./includes/helperFuncs.h"   
-
+    #include "./includes/helperFuncs.h"
+    #include "./includes/pobject.h"  
+    extern int yylex();
+    extern int yyparse();
+    extern FILE *yyin;
+    
+    void yyerror(const char *s);
+    int main(int argc, char **argv){
+      yyparse();
+      return 0;
+    } 
+    pobject p, t, f, t1, t2;
 %}
+
 %token ARRAY BOOLEAN BREAK CHAR CONTINUE DO ELSE FALSE FUNCTION IF INTEGER OF STRING STRUCT TRUE TYPE VAR WHILE RETURN 
 %token COLON SEMI_COLON COMMA EQUALS LEFT_SQUARE RIGHT_SQUARE LEFT_BRACES RIGHT_BRACES LEFT_PARENTHESIS RIGHT_PARENTHESIS AND OR LESS_THAN GREATER_THAN LESS_OR_EQUAL GREATER_OR_EQUAL NOT_EQUAL EQUAL_EQUAL PLUS PLUS_PLUS MINUS MINUS_MINUS TIMES DIVIDE DOT NOT 
 %token CHARACTER NUMERAL STRINGVAL IDT ASSIGN
 %token UNKNOWN END
-%token chr num str id true false
+%token chr num str id
 
 %token <num> number
 %token <id> identifier
-%union{
-	int nName;
-	struct object * pNext;
-	t_kind eKind;
+%union {
+	int nont;
 	union {
 		struct {
-			struct object *pType;
-		  } Var, Param, Field;
+			pobject obj;
+			int name;
+		} ID_;
 		struct {
-			struct object *pRetType;
-			struct object *pParams;
-		} Function;
+			pobject type;
+		} T_,E_,L_,R_,TM_,F_,LV_;
 		struct {
-			struct object *pElemType; int nNumElems;
-		} Array;
+			pobject list;
+		} LI_,DC_;
+		struct{
+			pobject list;
+			int nSize;
+		} LP_;
+		struct{
+			int val;
+			pobject type;
+		} BOOL_;
 		struct {
-			struct object *pFields;
-		} Struct;
-		struct {
-			struct object *pBaseType;
-		} Alias;
+			pobject type;
+			int pos;
+			union {
+				int n;
+				char c;
+				char **s;
+			} val;
+		} CONST_;
+		struct{
+			pobject type;
+			pobject param;
+			int err;
+		}MC_;
+		struct{
+			pobject type;
+			pobject param;
+			int err;
+			int n;
+		} LE_;
 	}_;
 }
+
 %token <kind> NO_KIND_DEF_ VAR_ PARAM_ FUNCTION_ FIELD_ ARRAY_TYPE_ STRUCT_TYPE_ ALIAS_TYPE_ SCALAR_TYPE_  UNIVERSAL_
 %right "then" ELSE
 %start P

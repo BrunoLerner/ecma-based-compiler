@@ -3,13 +3,6 @@
 
 //TODO what is the max nest level
 #define MAX_NEST_LEVEL 10
-
-typedef struct object
-{
-    int nName;
-    struct object *pNext;
-} object, *pobject;
-
 pobject SymbolTable[MAX_NEST_LEVEL];
 pobject SymbolTableLast[MAX_NEST_LEVEL];
 int nCurrentLevel = -1;

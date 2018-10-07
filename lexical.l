@@ -1,6 +1,8 @@
 %{
-  #include<lexical.h>  
-  #include"y.tab.h"
+  // #include"includes/lexical.h"  
+  #include <stdio.h>
+  #include"includes/y.tab.h"
+  extern int yylex();
 %}
 
 %%
@@ -44,7 +46,7 @@
 '.'                   return chr;
 [a-zA-Z]+             return id;
 [ \t\v\n\f]           /* ignore */ ;
-.                     yyerror("opa, erro lexico!");
+.                     puts("opa, erro lexico!");
 
 %%
 
