@@ -1,7 +1,8 @@
 %{
   // #include"includes/lexical.h"  
   #include <stdio.h>
-  #include"includes/y.tab.h"
+  #include"./includes/y.tab.h"
+  #include"./includes/shared.h"
   extern int yylex();
 %}
 
@@ -13,13 +14,13 @@
 "continue"            return CONTINUE;
 "do"                  return DO;
 "else"                return ELSE;
-"false"               return FALSE;
+"false"               return const_false;
 "function"            return FUNCTION;
 "if"                  return IF;
 "integer"             return INTEGER;
 "string"              return STRING;
 "struct"              return STRUCT;
-"true"                return TRUE;
+"true"                return const_true;
 "type"                return TYPE; 
 "var"                 return VAR;
 "while"               return WHILE;
@@ -41,9 +42,9 @@
 "}"                   return RIGHT_BRACES;
 "."                   return DOT;
 "!"                   return NOT;
-[1-9][0-9]*           return num;
-\"[a-zA-Z]+\"         return str;
-'.'                   return chr;
+[1-9][0-9]*           return const_number;
+\"[a-zA-Z]+\"         return const_string;
+'.'                   return const_char;
 [a-zA-Z]+             return id;
 [ \t\v\n\f]           /* ignore */ ;
 .                     puts("opa, erro lexico!");

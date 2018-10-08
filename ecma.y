@@ -2,28 +2,24 @@
     // declaracoes em C que auxiliam nas ações das regras de derivacao
     #include<stdio.h>
     #include<stdlib.h> 
-    #include "./includes/helperFuncs.h"
-    #include "./includes/pobject.h"  
+    #include "./includes/shared.h"
+    #include "./includes/lexer.h"
+    #include "./includes/object.h"
+    #include "./includes/syntax.h"
+    #include "./includes/attributes.h"
+    #define db(x) printf(#x);printf(": %d\n",x);
+    int secondaryToken;
     extern int yylex();
     extern int yyparse();
     extern FILE *yyin;
-    
     void yyerror(const char *s);
-    int main(int argc, char **argv){
-      yyparse();
-      return 0;
-    } 
     pobject p, t, f, t1, t2;
 %}
 
-%token ARRAY BOOLEAN BREAK CHAR CONTINUE DO ELSE FALSE FUNCTION IF INTEGER OF STRING STRUCT TRUE TYPE VAR WHILE RETURN 
-%token COLON SEMI_COLON COMMA EQUALS LEFT_SQUARE RIGHT_SQUARE LEFT_BRACES RIGHT_BRACES LEFT_PARENTHESIS RIGHT_PARENTHESIS AND OR LESS_THAN GREATER_THAN LESS_OR_EQUAL GREATER_OR_EQUAL NOT_EQUAL EQUAL_EQUAL PLUS PLUS_PLUS MINUS MINUS_MINUS TIMES DIVIDE DOT NOT 
-%token CHARACTER NUMERAL STRINGVAL IDT ASSIGN
-%token UNKNOWN END
-%token chr num str id
-
-%token <num> number
-%token <id> identifier
+%token ARRAY OF COLON SEMI_COLON STRUCT COMMA EQUALS LEFT_SQUARE RIGHT_SQUARE LEFT_BRACES RIGHT_BRACES LEFT_PARENTHESIS RIGHT_PARENTHESIS AND OR LESS_THAN GREATER_THAN LESS_OR_EQUAL GREATER_OR_EQUAL NOT_EQUAL EQUAL_EQUAL PLUS PLUS_PLUS MINUS MINUS_MINUS TIMES DIVIDE DOT NOT
+%token TYPE RETURN ELSE BREAK WHILE VAR ASSIGN CONTINUE FUNCTION STRING IF BOOLEAN CHAR INTEGER DO
+%token const_array const_char const_number const_string id const_true const_false
+%token ERR_REDCL ERR_NO_DECL ERR_TYPE_EXPECTED ERR_BOOL_TYPE_EXPECTED ERR_TYPE_MISMATCH ERR_INVALID_TYPE ERR_KIND_NOT_STRUCT ERR_FIELD_NOT_DECL ERR_KIND_NOT_ARRAY ERR_INVALID_INDEX_TYPE ERR_KIND_NOT_VAR ERR_KIND_NOT_FUNCTION ERR_TOO_MANY_ARGS ERR_PARAM_TYPE ERR_TOO_FEW_ARGS ERR_RETURN_TYPE_MISMATCH
 %union {
 	int nont;
 	union {
@@ -67,8 +63,11 @@
 		} LE_;
 	}_;
 }
+%token <type> NT_TRUE NT_FALSE NT_CHR NT_STR NT_NUM MF MC
+%token NO_KIND_DEF_ VAR_ PARAM_ FUNCTION_ FIELD_ ARRAY_TYPE_ STRUCT_TYPE_ ALIAS_TYPE_ SCALAR_TYPE_  UNIVERSAL_
 
-%token <kind> NO_KIND_DEF_ VAR_ PARAM_ FUNCTION_ FIELD_ ARRAY_TYPE_ STRUCT_TYPE_ ALIAS_TYPE_ SCALAR_TYPE_  UNIVERSAL_
+
+
 %right "then" ELSE
 %start P
 
@@ -83,19 +82,40 @@
 P : LDE ;
 LDE : LDE DE 
     | DE ;
-DE : DF 
-| DT ;
 
-T : INTEGER {$<type>$ = TYPE_INTEGER}
-  | CHAR    {$<type>$ = TYPE_CHAR}
-  | BOOLEAN {$<type>$ = TYPE_BOOLEAN}
-  | STRING  {$<type>$ = TYPE_STRING}
-  | IDU     {$<type>$ = $<type>1};
+DE : DF 
+   | DT ;
+
+T : INTEGER {
+	$<nont>$ = T;
+	$<_.T_.type>$ = pInt;
+}
+  | CHAR {
+	$<nont>$ = T;
+	$<_.T_.type>$ = pChar;
+}
+  | BOOLEAN {
+	$<nont>$ = T;
+	$<_.T_.type>$ = pBool;
+}
+  | STRING {
+	$<nont>$ = T;
+	$<_.T_.type>$ = pString;
+}
+  | IDU{
+	p = $<_.ID_.obj>$;
+	if (IS_TYPE_KIND(p->eKind) || p->eKind == UNIVERSAL_) {
+		$<_.T_.type>$ = p;
+	} else {
+		$<_.T_.type>$ = pUniversal;
+	}
+	$<nont>$ = T;
+};
 
 NB : {
   NewBlock();
 };
-DT : TYPE IDD ASSIGN ARRAY LEFT_SQUARE NUM RIGHT_SQUARE OF T 
+DT : TYPE IDD ASSIGN const_array LEFT_SQUARE NUM RIGHT_SQUARE OF T 
    | TYPE IDD ASSIGN STRUCT NB LEFT_BRACES DC RIGHT_BRACES {
      EndBlock();
    }
@@ -104,22 +124,22 @@ DC : DC SEMI_COLON LI COLON T
    | LI COLON T ;
 
 DF : FUNCTION IDD NB LEFT_PARENTHESIS LP RIGHT_PARENTHESIS COLON T B {
-  $<type>$ = $<type>7
   EndBlock();
 };
 LP : LP COMMA IDD COLON T 
    | IDD COLON T
    |  ;
-   
-B : LEFT_BRACES LDV LS RIGHT_BRACES
-  | LEFT_BRACES LS RIGHT_BRACES ;
 
+
+B : LEFT_BRACES LDV LS RIGHT_BRACES
+  | LEFT_BRACES LS RIGHT_BRACES ; 
 LDV : LDV DV 
     | DV ;
 LS : LS S 
    | S ;
-DV : VAR LI COLON T SEMI_COLON ;
 
+
+DV : VAR LI COLON T SEMI_COLON ;
 LI : LI COMMA IDD
    | IDD ;
 
@@ -132,7 +152,7 @@ S : IF LEFT_PARENTHESIS E RIGHT_PARENTHESIS S %prec "then"
   | BREAK SEMI_COLON 
   | CONTINUE SEMI_COLON
   | RETURN E SEMI_COLON ;
-
+  
 E : E AND L 
   | E OR L 
   | L ;
@@ -168,31 +188,24 @@ LE : LE COMMA E
 LV : LV DOT IDU
    | LV LEFT_SQUARE E RIGHT_SQUARE
    | IDU ;
-IDD : id;
-IDU : id;
-/* TRUE: true {
-	$<type>$ = pBool;
-	$<val>$  = true;
+IDD : id {
+  db(secondaryToken);
 };
-FALSE: false {
-	$<type>$ = pBool;
-	$<val>$  = false;
-}; */
-CHR: chr {
-	$<type>$ = pChar;
-	$<pos>$  = tokenSecundario;
-	$<val>$  = getCharConst(CHR.pos);
+IDU : id {
+  char *name =ids[secondaryToken].name;
+  // $<_.ID_.name>$ = name;
+  printf("\n\n%s\n\n", ids[0].name);
+  printf("\n\n%d\n\n", secondaryToken);
+  if( searchName( name ) == -1 ) {
+        printf("é o que? macho?\n");
+        addName(name);
+  }
 };
-STR: str {
-	$<type>$ = pString;
-	$<pos>$ = tokenSecundario;
-	$<val>$ = getStringConst(STR.pos);
-};
-NUM: num {
-	$<type>$ = pInteger;
-	$<pos>$  = tokenSecundario;
-	$<val>$  = getIntConst(NUM.pos);
-};
+TRUE : const_true;
+FALSE : const_false;
+CHR : const_char;
+STR : const_string;
+NUM : const_number;
 %%
 
 void yyerror(const char *error) {
