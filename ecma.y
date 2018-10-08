@@ -2,8 +2,9 @@
     // declaracoes em C que auxiliam nas ações das regras de derivacao
     #include<stdio.h>
     #include<stdlib.h> 
-    #include "./includes/shared.h"
+    #include<string.h>
     #define db(x) printf(#x);printf(": %d\n",x);
+    #define MAX_NEST_LEVEL 50
     extern int secondaryToken;
     extern int line;
     extern int yylex();
@@ -23,45 +24,11 @@
     int addName(char *name);
     int NewBlock(void);
     int EndBlock(void);
-    typedef struct object
-    {
-        int nName;
-        struct object *pNext;
-        int eKind;
-
-        union {
-            struct
-            {
-                struct object *pType;
-            } Var, Param, Field;
-            struct
-            {
-                struct object *pRetType;
-                struct object *pParams;
-                int nParams;
-            } Function;
-            struct
-            {
-                struct object *pElemType;
-                int nNumElems;
-            } Array;
-            struct
-            {
-                struct object *pFields;
-            } Struct;
-            struct
-            {
-                struct object *pBaseType;
-            } Alias, Type;
-        } _;
-
-    } object, *pobject;
 %}
 
 %code requires{
-#include "./includes/object.h"
-#include "./includes/syntax.h"
-#include "./includes/attributes.h"
+#include "object.h"
+#include "attributes.h"
 pobject p, t, f, t1, t2;
 }
 

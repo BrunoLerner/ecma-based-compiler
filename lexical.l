@@ -1,9 +1,10 @@
 %{
   // #include"includes/lexical.h"  
   #include <stdio.h>
-  #include"./includes/y.tab.h"
-  #include"./includes/shared.h"
+  #include"ecma.tab.h"
   extern int yylex();
+  extern int line;
+  extern int secondaryToken;  
 %}
 
 %%
