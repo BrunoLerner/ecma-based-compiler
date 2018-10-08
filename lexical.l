@@ -45,7 +45,7 @@
 \"[a-zA-Z]+\"         return const_string;
 '.'                   return const_char;
 [a-zA-Z]+             return id;
-[ \t\v\n\f]           /* ignore */ ;
+[ \t\v\n\f]           ;
 .                     puts("opa, erro lexico!");
 
 %%

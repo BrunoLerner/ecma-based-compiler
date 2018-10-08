@@ -5,7 +5,6 @@
     #include<string.h>
     #include "shared.h"
     #include "scope.h"
-    #include "attributes.h"
     #define db(x) printf(#x);printf(": %d\n",x);
     #define MAX_NEST_LEVEL 50
 
@@ -91,7 +90,6 @@
 // DE = Declaracao Externa
 // DF = Declaracao de Funcao
 // DT = Declaracao de Tipo
-//
 
 P : LDE ;
 LDE : LDE DE 

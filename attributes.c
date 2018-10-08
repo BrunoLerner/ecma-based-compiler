@@ -1,5 +1,4 @@
-#include "./y.tab.h"
-#include "./attributes.h"
+#include "attributes.h"
 
 int hasError = 0;
 
