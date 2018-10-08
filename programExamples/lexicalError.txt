@@ -1,0 +1,11 @@
+function fun1 ( id : string ) : integer {
+    @$
+	var c : boolean;
+	var a : integer;
+	var b : integer;
+	var i : integer;
+	c = true && false;
+
+	while( a != b)
+		i = i+1;
+}
