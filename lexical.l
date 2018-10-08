@@ -2,9 +2,7 @@
   #include <stdio.h>
   #include"ecma.tab.h"
   #include"shared.h"
-  extern int yylex();
-  extern int line;
-  extern int secondaryToken;  
+  extern int yylex();  
 %}
 
 %%

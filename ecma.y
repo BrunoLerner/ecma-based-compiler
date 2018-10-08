@@ -3,6 +3,9 @@
     #include<stdio.h>
     #include<stdlib.h> 
     #include<string.h>
+    #include "shared.h"
+    #include "scope.h"
+    #include "attributes.h"
     #define db(x) printf(#x);printf(": %d\n",x);
     #define MAX_NEST_LEVEL 50
 
@@ -25,7 +28,7 @@
 
 %code requires{
 #include "object.h"
-#include "shared.h"
+#include "syntax.h"
 #include "attributes.h"
 pobject p, t, f, t1, t2;
 }
