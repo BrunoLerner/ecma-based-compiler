@@ -22,8 +22,6 @@
 
     int searchName(char *name);
     int addName(char *name);
-    int NewBlock(void);
-    int EndBlock(void);
 %}
 
 %code requires{
@@ -209,15 +207,12 @@ int idsCount=0;
 int searchName(char *name){
     int pos;
     for(pos=0;pos<idsCount;pos++){
-        puts("---------------------------");
         printf("name: %s\n",name);
         printf("name: %s\n",ids[pos].name);
-        puts("---------------------------");
         //if(strcmp(name,ids[pos].name) != 0){
         //    return pos;
         //}
     }
-    puts("pasdasdasd \n");
     return -1;
 }
 

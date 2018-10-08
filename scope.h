@@ -4,8 +4,5 @@
 
 int NewBlock(void);
 int EndBlock(void);
-pobject Define(int aName);
-pobject Search(int aName);
-pobject Find(int aName);
 
 #endif
