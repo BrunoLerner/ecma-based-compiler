@@ -5,8 +5,8 @@
     #include<string.h>
     #define db(x) printf(#x);printf(": %d\n",x);
     #define MAX_NEST_LEVEL 50
-    extern int secondaryToken;
-    extern int line;
+
+    int secondaryToken;
     extern int yylex();
     extern int yyparse();
     extern FILE *yyin;
@@ -15,9 +15,6 @@
       char name[500];
       int count;
     } ids[1000];
-    typedef enum{
-        P = 51,LDE,DE,T,NB,DF,LP,B,LDV,LS,DV,LI,S,E,L,R,Y,F,LE,LV,IDD,IDU,ID
-    } t_nterm;
     extern int idsCount;
 
     int searchName(char *name);
@@ -28,6 +25,7 @@
 
 %code requires{
 #include "object.h"
+#include "shared.h"
 #include "attributes.h"
 pobject p, t, f, t1, t2;
 }
@@ -102,31 +100,11 @@ LDE : LDE DE
 DE : DF 
    | DT ;
 
-T : INTEGER {
-	$<nont>$ = T;
-	$<_.T_.type>$ = pInt;
-}
-  | CHAR {
-	$<nont>$ = T;
-	$<_.T_.type>$ = pChar;
-}
-  | BOOLEAN {
-	$<nont>$ = T;
-	$<_.T_.type>$ = pBool;
-}
-  | STRING {
-	$<nont>$ = T;
-	$<_.T_.type>$ = pString;
-}
-  | IDU{
-	p = $<_.ID_.obj>$;
-	if (IS_TYPE_KIND(p->eKind) || p->eKind == UNIVERSAL_) {
-		$<_.T_.type>$ = p;
-	} else {
-		$<_.T_.type>$ = pUniversal;
-	}
-	$<nont>$ = T;
-};
+T : INTEGER 
+  | CHAR 
+  | BOOLEAN 
+  | STRING 
+  | IDU;
 
 NB : {
   NewBlock();
@@ -222,8 +200,9 @@ CHR : const_char;
 STR : const_string;
 NUM : const_number;
 %%
+
+
 int idsCount=0;
-int secondaryToken=0;
 
 int searchName(char *name){
     int pos;
@@ -244,7 +223,7 @@ int addName(char *name){
     int pos;
     for(pos=0;pos<idsCount;pos++){
         printf("addName: comparing %s with %s\n",name,ids[pos].name);
-        if(strcmp(name,ids[pos].name) == 0){ //achou
+        if(strcmp(name,ids[pos].name) == 0){ 
             ids[pos].count++;
             printf("Found name! addName returning %d\n", pos);
             return pos;
