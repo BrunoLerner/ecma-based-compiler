@@ -3,18 +3,67 @@
     #include<stdio.h>
     #include<stdlib.h> 
     #include "./includes/shared.h"
-    #include "./includes/lexer.h"
-    #include "./includes/object.h"
-    #include "./includes/syntax.h"
-    #include "./includes/attributes.h"
     #define db(x) printf(#x);printf(": %d\n",x);
-    int secondaryToken;
+    extern int secondaryToken;
+    extern int line;
     extern int yylex();
     extern int yyparse();
     extern FILE *yyin;
     void yyerror(const char *s);
-    pobject p, t, f, t1, t2;
+    struct idCounter {
+      char name[500];
+      int count;
+    } ids[1000];
+    typedef enum{
+        P = 51,LDE,DE,T,NB,DF,LP,B,LDV,LS,DV,LI,S,E,L,R,Y,F,LE,LV,IDD,IDU,ID
+    } t_nterm;
+    extern int idsCount;
+
+    int searchName(char *name);
+    int addName(char *name);
+    int NewBlock(void);
+    int EndBlock(void);
+    typedef struct object
+    {
+        int nName;
+        struct object *pNext;
+        int eKind;
+
+        union {
+            struct
+            {
+                struct object *pType;
+            } Var, Param, Field;
+            struct
+            {
+                struct object *pRetType;
+                struct object *pParams;
+                int nParams;
+            } Function;
+            struct
+            {
+                struct object *pElemType;
+                int nNumElems;
+            } Array;
+            struct
+            {
+                struct object *pFields;
+            } Struct;
+            struct
+            {
+                struct object *pBaseType;
+            } Alias, Type;
+        } _;
+
+    } object, *pobject;
 %}
+
+%code requires{
+#include "./includes/object.h"
+#include "./includes/syntax.h"
+#include "./includes/attributes.h"
+pobject p, t, f, t1, t2;
+}
 
 %token ARRAY OF COLON SEMI_COLON STRUCT COMMA EQUALS LEFT_SQUARE RIGHT_SQUARE LEFT_BRACES RIGHT_BRACES LEFT_PARENTHESIS RIGHT_PARENTHESIS AND OR LESS_THAN GREATER_THAN LESS_OR_EQUAL GREATER_OR_EQUAL NOT_EQUAL EQUAL_EQUAL PLUS PLUS_PLUS MINUS MINUS_MINUS TIMES DIVIDE DOT NOT
 %token TYPE RETURN ELSE BREAK WHILE VAR ASSIGN CONTINUE FUNCTION STRING IF BOOLEAN CHAR INTEGER DO
@@ -197,7 +246,6 @@ IDU : id {
   printf("\n\n%s\n\n", ids[0].name);
   printf("\n\n%d\n\n", secondaryToken);
   if( searchName( name ) == -1 ) {
-        printf("é o que? macho?\n");
         addName(name);
   }
 };
@@ -207,6 +255,54 @@ CHR : const_char;
 STR : const_string;
 NUM : const_number;
 %%
+int idsCount=0;
+int secondaryToken=0;
+
+int searchName(char *name){
+    int pos;
+    for(pos=0;pos<idsCount;pos++){
+        puts("---------------------------");
+        printf("name: %s\n",name);
+        printf("name: %s\n",ids[pos].name);
+        puts("---------------------------");
+        //if(strcmp(name,ids[pos].name) != 0){
+        //    return pos;
+        //}
+    }
+    puts("pasdasdasd \n");
+    return -1;
+}
+
+int addName(char *name){
+    int pos;
+    for(pos=0;pos<idsCount;pos++){
+        printf("addName: comparing %s with %s\n",name,ids[pos].name);
+        if(strcmp(name,ids[pos].name) == 0){ //achou
+            ids[pos].count++;
+            printf("Found name! addName returning %d\n", pos);
+            return pos;
+        }
+    }
+    idsCount++;
+    strcpy(ids[pos].name,name);
+    ids[pos].count=1;
+    printf("Did not find name! addName returning %d\n",pos);
+    return pos;
+}
+
+pobject SymbolTable[MAX_NEST_LEVEL];
+pobject SymbolTableLast[MAX_NEST_LEVEL];
+int nCurrentLevel = -1;
+
+int NewBlock(void) {
+    SymbolTable[++nCurrentLevel] = NULL;
+    SymbolTableLast[nCurrentLevel] = NULL;
+    return nCurrentLevel;
+}
+
+int EndBlock(void) {
+    return --nCurrentLevel;
+}
 
 void yyerror(const char *error) {
 	fprintf(stderr,"error: %s\n",error);
