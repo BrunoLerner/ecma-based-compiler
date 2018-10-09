@@ -1,6 +1,5 @@
 #include <stdlib.h>
 #include <stdio.h>
-
 #include "scope.h"
 
 //TODO what is the max nest level
