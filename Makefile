@@ -34,3 +34,8 @@ bison.c: ecma.y
 
 clean:
 	rm -f *.o *~ lex.c lex.yy.c bison.c tok.h ecma.tab.c ecma.tab.h ecma.output simple_script_language attributes.o code.o
+
+test:
+	make clean;
+	make;
+	./simple_script_language < examples/correct

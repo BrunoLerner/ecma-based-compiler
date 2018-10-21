@@ -1,8 +1,9 @@
 %{
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-#include "./ecma.tab.h"
-#include "./includes/shared.h"
+#include "./parser.tab.h"
+#include "./helpers/shared.h"
 #define db(x) printf(#x);printf(": %d\n",x);
 
 
@@ -28,9 +29,9 @@ int main(int argc, char **argv){
 %}
 
 %code requires{
-#include "./includes/object.h"
-#include "./includes/syntax.h"
-#include "./includes/attributes.h"
+#include "./helpers/object.h"
+#include "./helpers/syntax.h"
+#include "./helpers/attributes.h"
 
 pobject p, t, f, t1, t2;
 
@@ -532,7 +533,6 @@ LV : LV DOT IDU
    };
 
 IDD : id {
-	printf("IDD -> id\n");
   $<_.ID_.name>$ = ids[currentLevel][secondaryToken].name;
   if( ids[currentLevel][secondaryToken].count  > 1 ) {
     printf("scope error: trying to redefine\n");
@@ -554,4 +554,4 @@ TRUE: const_true;
 FALSE: const_false;
 CHR: const_char;
 STR: const_string;
-NUM: const_number;
+NUM: const_number {};
