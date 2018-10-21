@@ -17,7 +17,7 @@ scope.o: includes/scope.c
 attributes.o: includes/attributes.c
 	$(CC) $(CFLAGS) -c includes/attributes.c -o attributes.o
 
-code.o: includes/codegen.c
+codegen.o: includes/codegen.c
 	$(CC) $(CFLAGS) -c includes/codegen.c -o codegen.o
 
 lex.c: lexical.l 
@@ -27,10 +27,10 @@ lex.c: lexical.l
 bison.o: bison.c
 	$(CC) $(CFLAGS) -c bison.c -o bison.o
 
-bison.c: parser.y
-	bison -d -v parser.y
-	cp parser.tab.c bison.c
-	cmp -s parser.tab.h tok.h || cp parser.tab.h tok.h
+bison.c: ecma.y
+	bison -d -v ecma.y
+	cp ecma.tab.c bison.c
+	cmp -s ecma.tab.h tok.h || cp ecma.tab.h tok.h
 
 clean:
-	rm -f *.o *~ lex.c lex.yy.c bison.c tok.h parser.tab.c parser.tab.h parser.output simple_script_language attributes.o code.o
+	rm -f *.o *~ lex.c lex.yy.c bison.c tok.h ecma.tab.c ecma.tab.h ecma.output simple_script_language attributes.o code.o

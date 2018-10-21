@@ -1,4 +1,4 @@
-#include "./parser.tab.h"
+#include "../ecma.tab.h"
 #include "./attributes.h"
 
 int hasError = 0;

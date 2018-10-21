@@ -1,7 +1,7 @@
 %{
 #include <stdio.h>
 #include <string.h>
-#include "./parser.tab.h"
+#include "./ecma.tab.h"
 #include "./includes/shared.h"
 #define db(x) printf(#x);printf(": %d\n",x);
 
