@@ -1,55 +1,57 @@
 %{
-  #include <stdio.h>
-  #include"ecma.tab.h"
-  #include"shared.h"
-  extern int yylex();  
+	#include <stdio.h>
+	#include "./parser.tab.h"
+	#include "./includes/shared.h"
+
+	int line = 0;
+
 %}
-
-%%
-"array"               return ARRAY;
-"boolean"             return BOOLEAN;
-"break"               return BREAK;
-"char"                return CHAR;
-"continue"            return CONTINUE;
-"do"                  return DO;
-"else"                return ELSE;
-"false"               return const_false;
-"function"            return FUNCTION;
-"if"                  return IF;
-"integer"             return INTEGER;
-"string"              return STRING;
-"struct"              return STRUCT;
-"true"                return const_true;
-"type"                return TYPE; 
-"var"                 return VAR;
-"while"               return WHILE;
-"return"              return RETURN;
-":"                   return COLON;
-";"                   return SEMI_COLON;
-","                   return COMMA;
-"=="                  return EQUALS;  
-"="                   return ASSIGN;
-">="                  return GREATER_OR_EQUAL;
-"<="                  return LESS_OR_EQUAL;
-">"                   return GREATER_THAN;
-"<"                   return LESS_THAN;
-"("                   return LEFT_PARENTHESIS;
-")"                   return RIGHT_PARENTHESIS;
-"["                   return LEFT_SQUARE;
-"]"                   return RIGHT_SQUARE;
-"{"                   return LEFT_BRACES;
-"}"                   return RIGHT_BRACES;
-"."                   return DOT;
-"!"                   return NOT;
-[1-9][0-9]*           return const_number;
-\"[a-zA-Z]+\"         return const_string;
-'.'                   return const_char;
-[a-zA-Z]+             return id;
-[ \t\v\n\f]           ;
-.                     puts("opa, erro lexico!");
-
 %%
 
-int yywrap(void) {
-  return 1;
-}
+"else"                {return ELSE;}
+"break"               {return BREAK;}
+"while"               {return WHILE;}
+"var"                 {return VAR;}
+"="                   {return ASSIGN;}
+"continue"            {return CONTINUE;}
+"function"            {return FUNCTION;}
+"string"              {return STRING;}
+"if"                  {return IF;}
+"boolean"             {return BOOLEAN;}
+"char"                {return CHAR;}
+"type"                {return TYPE;}
+"integer"             {return INTEGER;}
+"return"              {return RETURN;}
+"do"                  {return DO;}
+"of"                  {return OF;}
+"struct"              {return STRUCT;}
+">="                  {return GREATER_OR_EQUAL;}
+"<="                  {return LESS_OR_EQUAL;}
+">"                   {return GREATER_THAN;}
+"<"                   {return LESS_THAN;}
+"("                   {return LEFT_PARENTHESIS;}
+")"                   {return RIGHT_PARENTHESIS;}
+"+"                   {return PLUS;}
+"-"                   {return MINUS;}
+"++"                  {return PLUS_PLUS;}
+"--"                  {return MINUS_MINUS;}
+"["                   {return LEFT_SQUARE;}
+"]"                   {return RIGHT_SQUARE;}
+"{"                   {return LEFT_BRACES;}
+"}"                   {return RIGHT_BRACES;}
+":"                   {return COLON;}
+";"                   {return SEMI_COLON;}
+"."                   {return DOT;}
+","                   {return COMMA;}
+"!"                   {return NOT;}
+"true"                {return const_true;}
+"false"               {return const_false;}
+\[(.*,)*\]            {return const_array;}
+[0-9]+                {return const_number;}
+\"[a-zA-Z]+\"         {return const_string;}
+'.'                   {return const_char;}
+[a-zA-Z]+             {secondaryToken = addName(yytext);return id;}
+[ \t\v\f]             { /* ignore blank characters */ }
+\n                    {++line;}
+.                     { puts("lexer error: invalid character"); exit(1); }
+

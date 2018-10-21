@@ -1,4 +1,5 @@
-#include "attributes.h"
+#include "./parser.tab.h"
+#include "./attributes.h"
 
 int hasError = 0;
 
