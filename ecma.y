@@ -1,44 +1,72 @@
 %{
-    // declaracoes em C que auxiliam nas ações das regras de derivacao
-    #include<stdio.h>
-    #include<stdlib.h> 
-    #include<string.h>
-    #include "shared.h"
-    #include "scope.h"
-    #define db(x) printf(#x);printf(": %d\n",x);
-    #define MAX_NEST_LEVEL 50
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "./ecma.tab.h"
+#include "./includes/shared.h"
+#include "./includes/codegen.h"
+#define db(x) printf(#x);printf(": %d\n",x);
+#define CODE_SIZE 500
 
-    int secondaryToken;
-    extern int yylex();
-    extern int yyparse();
-    extern FILE *yyin;
-    void yyerror(const char *s);
-    struct idCounter {
-      char name[500];
-      int count;
-    } ids[1000];
-    extern int idsCount;
 
-    int searchName(char *name);
-    int addName(char *name);
+void yyerror(const char *error) {
+    fprintf(stderr,"error: %s\n na linha %d",error,line);
+}
+
+int hadWarning = 0;
+
+int yywrap() {
+	if(hadWarning)
+		puts("compilado com warnings!");
+	else
+		puts("compilado com sucesso!");
+	puts("salvo em ./output.code");
+    return 1;
+} 
+  
+int main(int argc, char **argv){
+    yyparse();
+    return 0;
+} 
+
 %}
 
 %code requires{
-#include "object.h"
-#include "syntax.h"
-#include "attributes.h"
+#include "./includes/object.h"
+#include "./includes/syntax.h"
+#include "./includes/attributes.h"
+
+pobject p, t, f, t1, t2;
+
 }
 
-%token ARRAY OF COLON SEMI_COLON STRUCT COMMA EQUALS LEFT_SQUARE RIGHT_SQUARE LEFT_BRACES RIGHT_BRACES LEFT_PARENTHESIS RIGHT_PARENTHESIS AND OR LESS_THAN GREATER_THAN LESS_OR_EQUAL GREATER_OR_EQUAL NOT_EQUAL EQUAL_EQUAL PLUS PLUS_PLUS MINUS MINUS_MINUS TIMES DIVIDE DOT NOT
+%token STRUCT OF COLON SEMI_COLON COMMA EQUALS LEFT_SQUARE RIGHT_SQUARE LEFT_BRACES RIGHT_BRACES LEFT_PARENTHESIS RIGHT_PARENTHESIS AND OR LESS_THAN GREATER_THAN LESS_OR_EQUAL GREATER_OR_EQUAL NOT_EQUAL PLUS PLUS_PLUS MINUS MINUS_MINUS TIMES DIVIDE DOT NOT
+%token PLUS_EQUAL MINUS_EQUAL TIMES_EQUAL DIVIDE_EQUAL
 %token TYPE RETURN ELSE BREAK WHILE VAR ASSIGN CONTINUE FUNCTION STRING IF BOOLEAN CHAR INTEGER DO
 %token const_array const_char const_number const_string id const_true const_false
 %token ERR_REDCL ERR_NO_DECL ERR_TYPE_EXPECTED ERR_BOOL_TYPE_EXPECTED ERR_TYPE_MISMATCH ERR_INVALID_TYPE ERR_KIND_NOT_STRUCT ERR_FIELD_NOT_DECL ERR_KIND_NOT_ARRAY ERR_INVALID_INDEX_TYPE ERR_KIND_NOT_VAR ERR_KIND_NOT_FUNCTION ERR_TOO_MANY_ARGS ERR_PARAM_TYPE ERR_TOO_FEW_ARGS ERR_RETURN_TYPE_MISMATCH
+
 %union {
-	int nont;
+	struct {
+		int nont;
+
+		char *code;
+
+		int endParentCheckpoint;
+		int beginParentCheckpoint;
+
+		int value;
+
+		int variableOrder;
+
+		int nVariables;
+		int nParams;
+	} attr;
+
 	union {
 		struct {
 			pobject obj;
-			int name;
+			char* name;
 		} ID_;
 		struct {
 			pobject type;
@@ -76,182 +104,475 @@
 		} LE_;
 	}_;
 }
+
 %token <type> NT_TRUE NT_FALSE NT_CHR NT_STR NT_NUM MF MC
 %token NO_KIND_DEF_ VAR_ PARAM_ FUNCTION_ FIELD_ ARRAY_TYPE_ STRUCT_TYPE_ ALIAS_TYPE_ SCALAR_TYPE_  UNIVERSAL_
 
+%right "then" ELSE // Same precedence, but "shift" wins.
 
-
-%right "then" ELSE
 %start P
 
 %%
-// P = Programa
-// LDE = Lista de Declaracoes Externas
-// DE = Declaracao Externa
-// DF = Declaracao de Funcao
-// DT = Declaracao de Tipo
+/* Um Programa (P) é formado por uma Lista de Declarações Externas (LDE) */
 
-P : LDE ;
-LDE : LDE DE 
-    | DE ;
+P : LDE {
+	FILE *file = fopen("output.code","w");
+	fprintf(file,"%s",$<attr.code>1);
+	fclose(file);
+};
 
-DE : DF 
-   | DT ;
+LDE : LDE DE {
+		$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+		sprintf($<attr.code>$,"%s\n%s",$<attr.code>1,$<attr.code>2);
+	}
+    | DE {
+		$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+		strcpy($<attr.code>$, $<attr.code>1);
+	};
 
-T : INTEGER 
-  | CHAR 
-  | BOOLEAN 
-  | STRING 
-  | IDU;
+/* Uma Declaração Externa (DE) é uma Declaração de Função (DF) ou uma Declaração de Tipo (DT) ou uma Declaração de Variáveis (DV): */
+
+DE : DF {
+		$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+	strcpy($<attr.code>$,$<attr.code>1);
+}
+	| DT {
+		$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+		strcpy($<attr.code>$,$<attr.code>1);
+} ;
+
+/* Um Tipo (T) pode ser a palavra ‘integer’ ou a palavra ‘char’ ou a palavra ‘boolean’ ou a palavra ‘string’ ou um ID representando um tipo previamente declarado: */
+
+T : INTEGER {
+	$<attr.nont>$ = T;
+	$<_.T_.type>$ = pInt;
+}
+  | CHAR {
+	$<attr.nont>$ = T;
+	$<_.T_.type>$ = pChar;
+}
+  | BOOLEAN {
+	$<attr.nont>$ = T;
+	$<_.T_.type>$ = pBool;
+}
+  | STRING {
+	$<attr.nont>$ = T;
+	$<_.T_.type>$ = pString;
+}
+  | IDU{
+	p = $<_.ID_.obj>$;
+	if (IS_TYPE_KIND(p->eKind) || p->eKind == UNIVERSAL_) {
+		$<_.T_.type>$ = p;
+	} else {
+		$<_.T_.type>$ = pUniversal;
+	}
+	$<attr.nont>$ = T;
+};
+
+/* Uma Declaração de Tipo (DT) pode ser uma declaração de um tipo vetor ou um tipo estrutura ou um tipo sinônimo. */
 
 NB : {
   NewBlock();
 };
+
 DT : TYPE IDD ASSIGN const_array LEFT_SQUARE NUM RIGHT_SQUARE OF T 
    | TYPE IDD ASSIGN STRUCT NB LEFT_BRACES DC RIGHT_BRACES {
      EndBlock();
    }
    | TYPE IDD ASSIGN T ;
+
 DC : DC SEMI_COLON LI COLON T 
    | LI COLON T ;
 
+/* Uma Declaração de Função é formada pela palavra ‘function’ seguida pelo nome da função (ID) seguida da Lista de Parâmetros (LP) entre parênteses seguida por ‘:’ e pelo Tipo (T) de retorno seguido pelo Bloco (B): */
+
 DF : FUNCTION IDD NB LEFT_PARENTHESIS LP RIGHT_PARENTHESIS COLON T B {
-  EndBlock();
+	EndBlock();
+	int n = getFunctionNumber();
+	int p = $<attr.nParams>5;
+	int v = $<attr.nParams>9;
+
+		$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+	sprintf($<attr.code>$,"%s %d %d %d\n%s\n%s",
+		"BEGIN_FUNC",n,p,v,
+		$<attr.code>9,
+		"END_FUNC");
 };
-LP : LP COMMA IDD COLON T 
-   | IDD COLON T
-   |  ;
 
+LP : LP COMMA IDD COLON T {
+	$<attr.nParams>$ = $<attr.nParams>1 + 1;
+}
+   | IDD COLON T {
+	$<attr.nParams>$ = 1;
+}
+   | {
+	$<attr.nParams>$ = 0;
+} ;
 
-B : LEFT_BRACES LDV LS RIGHT_BRACES
-  | LEFT_BRACES LS RIGHT_BRACES ; 
-LDV : LDV DV 
-    | DV ;
-LS : LS S 
-   | S ;
+/* Um Bloco (B) é delimitado por chave e contém uma Lista de Declaração de Variáveis (LDV) seguida por uma Lista de Statements (LS) ou Comandos: */
 
+B : LEFT_BRACES LDV LS RIGHT_BRACES {
+	$<attr.nParams>$ = $<attr.nParams>2;
 
-DV : VAR LI COLON T SEMI_COLON ;
+	$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+	strcpy($<attr.code>$,$<attr.code>3);
+}
+  | LEFT_BRACES LS RIGHT_BRACES {
+	$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+	strcpy($<attr.code>$,$<attr.code>2);
+	$<attr.nParams>$ = 0;
+};
+
+LDV : LDV DV {
+	$<attr.nVariables>$ = $<attr.nVariables>1 + 1;
+}
+    | DV {
+	$<attr.nVariables>$ = 1;
+};
+
+LS : LS S {
+	$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+	sprintf($<attr.code>$,"%s\n%s",$<attr.code>1,$<attr.code>2);
+}
+   | S {
+	$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+	strcpy($<attr.code>$,$<attr.code>1);
+};
+
+/* Uma Declaração de Variáveis (DV) é formada pela palavra ‘var’ seguida por uma Lista de Identificadores (LI), separados por ‘,’, seguida de ‘:’ e do Tipo (T) das variáveis declaradas com um ‘;’ ao final. */
+
+DV : VAR LI COLON T SEMI_COLON;
+
 LI : LI COMMA IDD
    | IDD ;
 
-S : IF LEFT_PARENTHESIS E RIGHT_PARENTHESIS S %prec "then"
-  | IF LEFT_PARENTHESIS E RIGHT_PARENTHESIS S ELSE S
-  | WHILE LEFT_PARENTHESIS E RIGHT_PARENTHESIS S 
-  | DO S WHILE LEFT_PARENTHESIS E RIGHT_PARENTHESIS SEMI_COLON 
-  | B 
-  | LV ASSIGN E SEMI_COLON 
-  | BREAK SEMI_COLON 
-  | CONTINUE SEMI_COLON
-  | RETURN E SEMI_COLON ;
+/* Um Statement (S) pode ser um comando de seleção, repetição, um bloco, uma atricbuição ou um comando de controle de fluxo de repetição (‘break’ ou ‘continue’): */
+
+S : IF LEFT_PARENTHESIS E RIGHT_PARENTHESIS S %prec "then" {
+	int l1 = getCheckpoint();
+	$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+	sprintf($<attr.code>$,"%s\n%s%d\n%s\n%c%d%c",
+		$<attr.code>3,
+		"TJMP L",l1,
+		$<attr.code>5,
+		'L',l1,':');
+}
+  | IF LEFT_PARENTHESIS E RIGHT_PARENTHESIS S ELSE S {
+	int l1 = getCheckpoint();
+	int l2 = getCheckpoint();
+	$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+	sprintf($<attr.code>$,"%s\n%s%d\n%s\n%c%d%c\n%s\n%c%d%c",
+		$<attr.code>3,
+		"TJMP L",l1,
+		$<attr.code>5,
+		'L',l1,':',
+		$<attr.code>7,
+		'L',l2,':');
+}
+  | WHILE LEFT_PARENTHESIS E RIGHT_PARENTHESIS S {
+	int l1 = getCheckpoint();
+	int l2 = getCheckpoint();
+
+	$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+	sprintf($<attr.code>$,"%c%d%c\n%s\n%s%d\n%s\n%s%d\n%c%d%c",
+		'L',l1,':',
+		$<attr.code>3,
+		"TJMP L",l2,
+		$<attr.code>5,
+		"JMP L",l1,
+		'L',l2,':');
+
+	$<attr.beginParentCheckpoint>5 = l1;
+	$<attr.endParentCheckpoint>5 = l2;
+}
+  | DO S WHILE LEFT_PARENTHESIS E RIGHT_PARENTHESIS SEMI_COLON {
+	int l1 = getCheckpoint();
+	int l2 = getCheckpoint();
+	$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+	sprintf($<attr.code>$,"%c%d%c\n%s\n%s\n%s\n%s\n%d\n%c%d%c",
+		'L',l1,':',
+		$<attr.code>2,
+		$<attr.code>5,
+		"NOT",
+		"TJMP L",l1,
+		'L',l2,':');
+
+	$<attr.beginParentCheckpoint>5 = l1;
+	$<attr.endParentCheckpoint>5 = l2;
+}
+  | B {
+	$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+	strcpy($<attr.code>$,$<attr.code>1);
+}
+  | LV ASSIGN E SEMI_COLON {
+	int n = $<attr.value>3;
+	sprintf($<attr.code>$,"%s\n%s\n%s%d",
+		$<attr.code>1,
+		$<attr.code>3,
+		"STORE_REF",n);
+}
+  | BREAK SEMI_COLON {
+	$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+	sprintf($<attr.code>$,"JMP L%d",$<attr.endParentCheckpoint>$);
+  }
+  | CONTINUE SEMI_COLON {
+	$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+	sprintf($<attr.code>$,"JMP L%d",$<attr.beginParentCheckpoint>$);
+  }
+  | RETURN R SEMI_COLON {
+	int n = $<attr.value>2;
+	$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+	sprintf($<attr.code>$,"%s%d\n%s",
+		"LOAD_VAR ",n,
+		"RET");
+  };
   
-E : E AND L 
-  | E OR L 
-  | L ;
-L : L LESS_THAN R 
-  | L GREATER_THAN R 
-  | L LESS_OR_EQUAL R 
-  | L GREATER_OR_EQUAL R 
-  | L EQUALS R 
-  | L NOT_EQUAL R 
-  | R ;
-R : R PLUS Y 
-  | R MINUS Y 
-  | Y ;
-Y : Y TIMES F 
-  | Y DIVIDE F 
-  | F ;
-F : LV 
-  | PLUS_PLUS LV 
+/* Uma Expressão (E) pode ser composta por operadores lógicos, relacionais ou aritméticos, além de permitir o acesso aos componentes dos tipos agregados e da atribuição de valores: */
+
+E : E AND L {
+		$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+	sprintf($<attr.code>$,"%s\n%s\n%s",
+		$<attr.code>1,
+		$<attr.code>3,
+		"AND");	
+}
+  | E OR L {
+	$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+	sprintf($<attr.code>$,"%s\n%s\n%s",
+		$<attr.code>1,
+		$<attr.code>3,
+		"OR");
+  }
+  | L {
+	$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+	strcpy($<attr.code>$,$<attr.code>1);
+  } ;
+
+L : L LESS_THAN R {
+	$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+	sprintf($<attr.code>$, "%s\n%s\n%s",
+		$<attr.code>1,
+		$<attr.code>3,
+		"LT");
+}
+  | L GREATER_THAN R {
+	$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+	sprintf($<attr.code>$, "%s\n%s\n%s",
+		$<attr.code>1,
+		$<attr.code>3,
+		"GT");
+  }
+  | L LESS_OR_EQUAL R {
+		$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+	sprintf($<attr.code>$, "%s\n%s\n%s",
+		$<attr.code>1,
+		$<attr.code>3,
+		"LE");
+  }
+  | L GREATER_OR_EQUAL R {
+		$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+	sprintf($<attr.code>$, "%s\n%s\n%s",
+		$<attr.code>1,
+		$<attr.code>3,
+		"GE");
+  }
+  | L EQUALS R {
+		$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+	sprintf($<attr.code>$, "%s\n%s\n%s",
+		$<attr.code>1,
+		$<attr.code>3,
+		"EQ");
+  }
+  | L NOT_EQUAL R {
+	$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+	sprintf($<attr.code>$, "%s\n%s\n%s",
+		$<attr.code>1,
+		$<attr.code>3,
+		"NE");
+  }
+  | R {
+		$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+	strcpy($<attr.code>$,$<attr.code>1);
+  } ;
+
+R : R PLUS Y {
+	$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+	sprintf($<attr.code>$, "%s\n%s\n%s",
+		$<attr.code>1,
+		$<attr.code>3,
+		"ADD");
+}
+  | R MINUS Y {
+		$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+	sprintf($<attr.code>$, "%s\n%s\n%s",
+		$<attr.code>1,
+		$<attr.code>3,
+		"SUB");
+  }
+  | Y {
+		$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+	strcpy($<attr.code>$,$<attr.code>1);
+  } ;
+
+Y : Y TIMES F {
+		$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+	sprintf($<attr.code>$, "%s\n%s\n%s",
+		$<attr.code>1,
+		$<attr.code>3,
+		"MUL");
+}
+  | Y DIVIDE F {
+		$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+	sprintf($<attr.code>$, "%s\n%s\n%s",
+		$<attr.code>1,
+		$<attr.code>3,
+		"DIV");
+  }
+  | F {
+		$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+	strcpy($<attr.code>$,$<attr.code>1);
+  } ;
+
+F : LV {
+		$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+		sprintf($<attr.code>$, "%s\n%s%d",
+		$<attr.code>1,
+		"DE_REF ", $<attr.variableOrder>$);
+	}
+  | PLUS_PLUS LV {
+	$<attr.variableOrder>$ = 1;
+	$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+	sprintf($<attr.code>$,"%s\n%s\n%s\n%s%d\n%s\n%s%d\n%s%d",
+		$<attr.code>2,
+		"DUP",
+		"DUP",
+		"DE_REF ",$<attr.variableOrder>$,
+		"INC",
+		"STORE_REF ",$<attr.variableOrder>$,
+		"DE_REF ",$<attr.variableOrder>$);
+}
   | MINUS_MINUS LV 
+	{
+		$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+		sprintf($<attr.code>$, "%s\n%s\n%s\n%s\n%s\n%s\n%s",
+		$<attr.code>2,
+		"DUP",
+		"DUP",
+		"DE_REF 1", 
+		"DEC",
+		"STORE_REF",
+		"DE_REF 1");
+	}
   | LV PLUS_PLUS 
-  | LV MINUS_MINUS 
+	{
+		$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+		sprintf($<attr.code>$, "%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s",
+		$<attr.code>2,
+		"DUP",
+		"DUP",
+		"DE_REF 1", 
+		"INC",
+		"STORE_REF",
+		"DE_REF 1",
+		"DEC");	
+	}
+  | LV MINUS_MINUS {
+		$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+		sprintf($<attr.code>$, "%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s",
+		$<attr.code>2,
+		"DUP",
+		"DUP",
+		"DE_REF 1", 
+		"DEC",
+		"STORE_REF",
+		"DE_REF 1",
+		"INC");	
+	}
   | LEFT_PARENTHESIS E RIGHT_PARENTHESIS 
   | IDU LEFT_PARENTHESIS LE RIGHT_PARENTHESIS 
-  | MINUS F 
-  | NOT 
-  | TRUE 
-  | FALSE
-  | CHR
-  | STR
-  | NUM ;
-LE : LE COMMA E
-   | E ;
+  | MINUS F {
+		$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+	  sprintf($<attr.code>$, "%s\n%s",
+	  	$<attr.code>2,
+		"NEG");
+  }
+  | NOT F {
+		$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+	  sprintf($<attr.code>$, "%s\n%s",
+	  	$<attr.code>2,
+		"NOT");
+  }
+  | TRUE {
+		$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+	  strcpy($<attr.code>$,"LOAD_TRUE");
+  }
+  | FALSE {
+		$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+	  strcpy($<attr.code>$,"LOAD_FALSE");
+  }
+  | CHR {
+		$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+	  int n = getConstantNumber();
+	  sprintf($<attr.code>$, "LOAD_CONST %d", n);
+  }
+  | STR {
+		$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+	  int n = getConstantNumber();
+	  sprintf($<attr.code>$, "LOAD_CONST %d", n);
+  }
+  | NUM {
+		$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+	  int n = getConstantNumber();
+	  sprintf($<attr.code>$, "LOAD_CONST %d", n);
+  } ;
+
+LE : LE COMMA E {
+		$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+		sprintf($<attr.code>$, "%s\n%s", $<attr.code>1, $<attr.code>3);
+	}
+  | E {
+		$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+		strcpy($<attr.code>$, $<attr.code>1);
+	} ;
+
 LV : LV DOT IDU
    | LV LEFT_SQUARE E RIGHT_SQUARE
-   | IDU ;
+   | IDU {
+	$<attr.code>$ = (char*) malloc(CODE_SIZE*sizeof(char));
+	sprintf($<attr.code>$,"LOAD_REF %d",$<attr.value>1);
+   };
+
 IDD : id {
-  db(secondaryToken);
+  $<_.ID_.name>$ = ids[currentLevel][secondaryToken].name;
+  if( ids[currentLevel][secondaryToken].count  > 1 ) {
+    printf("scope error: trying to redefine\n");
+		exit(1);
+  }
 };
+
 IDU : id {
-  char *name =ids[secondaryToken].name;
-  // $<_.ID_.name>$ = name;
-  printf("\n\n%s\n\n", ids[0].name);
-  printf("\n\n%d\n\n", secondaryToken);
-  if( searchName( name ) == -1 ) {
+  char *name =ids[currentLevel][secondaryToken].name;
+  $<_.ID_.name>$ = name;
+  $<attr.value>$ = searchName( name );
+  if( $<attr.value>$ == -1 ) {
+        printf("scope warning: trying to use unexisting %s\n",name);
+		hadWarning = 1;
         addName(name);
   }
 };
-TRUE : const_true;
-FALSE : const_false;
-CHR : const_char;
-STR : const_string;
-NUM : const_number;
-%%
 
-
-int idsCount=0;
-
-int searchName(char *name){
-    int pos;
-    for(pos=0;pos<idsCount;pos++){
-        printf("name: %s\n",name);
-        printf("name: %s\n",ids[pos].name);
-        //if(strcmp(name,ids[pos].name) != 0){
-        //    return pos;
-        //}
-    }
-    return -1;
-}
-
-int addName(char *name){
-    int pos;
-    for(pos=0;pos<idsCount;pos++){
-        printf("addName: comparing %s with %s\n",name,ids[pos].name);
-        if(strcmp(name,ids[pos].name) == 0){ 
-            ids[pos].count++;
-            printf("Found name! addName returning %d\n", pos);
-            return pos;
-        }
-    }
-    idsCount++;
-    strcpy(ids[pos].name,name);
-    ids[pos].count=1;
-    printf("Did not find name! addName returning %d\n",pos);
-    return pos;
-}
-
-pobject SymbolTable[MAX_NEST_LEVEL];
-pobject SymbolTableLast[MAX_NEST_LEVEL];
-int nCurrentLevel = -1;
-
-int NewBlock(void) {
-    SymbolTable[++nCurrentLevel] = NULL;
-    SymbolTableLast[nCurrentLevel] = NULL;
-    return nCurrentLevel;
-}
-
-int EndBlock(void) {
-    return --nCurrentLevel;
-}
-
-void yyerror(const char *error) {
-	fprintf(stderr,"error: %s\n",error);
-}
- 
-int yywrap() {return 1;} 
-  
-int main(int argc, char **argv){
-	yyparse();
-	return 0;
-} 
+TRUE: const_true {
+	$<attr.value>$ = getConstantNumber();
+};
+FALSE: const_false {
+	$<attr.value>$ = getConstantNumber();
+};
+CHR: const_char {
+	$<attr.value>$ = getConstantNumber();
+};
+STR: const_string {
+	$<attr.value>$ = getConstantNumber();
+};
+NUM: const_number {
+	$<attr.value>$ = getConstantNumber();
+};
