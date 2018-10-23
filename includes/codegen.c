@@ -17,16 +17,19 @@ void generateCode(char *code, int num, ...)
     printf("\n");
 }
 
+int constantNumber = 0;
 int getConstantNumber()
 {
     return constantNumber++;
 }
 
+int functionNumber = 0;
 int getFunctionNumber()
 {
     return functionNumber++;
 }
 
+int checkpoint = 0;
 int getCheckpoint()
 {
     return checkpoint++;
