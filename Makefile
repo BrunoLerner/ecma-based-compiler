@@ -38,4 +38,4 @@ clean:
 test:
 	make clean;
 	make;
-	./simple_script_language < examples/correct
+	./simple_script_language < programExamples/correct
