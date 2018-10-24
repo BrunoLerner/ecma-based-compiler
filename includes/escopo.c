@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "./scope.h"
+#include "./escopo.h"
 
 //TODO what is the max nest level
 #define MAX_NEST_LEVEL 10
@@ -34,7 +34,7 @@ int addName(char *name)
     for (pos = 0; pos < idsCount[currentLevel]; pos++)
     {
         if (strcmp(name, ids[currentLevel][pos].name) == 0)
-        { //achou
+        {
             ids[currentLevel][pos].count++;
             return pos;
         }

@@ -1,7 +1,7 @@
 #ifndef ATTRIBUTES_H
 #define ATTRIBUTES_H
 
-#include "./scope.h"
+#include "./escopo.h"
 
 #define MAX_NEST_LEVEL 50
 #define IS_TYPE_KIND(k) ((k) == ARRAY_TYPE_ ||  \

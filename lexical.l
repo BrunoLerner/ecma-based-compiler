@@ -1,6 +1,6 @@
 %{
 	#include <stdio.h>
-	#include "./ecma.tab.h"
+	#include "./ecma-parser.tab.h"
 	#include "./includes/shared.h"
 
 	int line = 0;
