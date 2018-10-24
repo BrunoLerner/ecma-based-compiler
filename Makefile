@@ -5,8 +5,8 @@ OBJS = bison.o lex.o escopo.o attributes.o codegen.o
 CC = cc
 CFLAGS = -g
 
-simple_script_language: $(OBJS)
-	$(CC) $(CFLAGS) $(OBJS) -o simple_script_language
+compiler: $(OBJS)
+	$(CC) $(CFLAGS) $(OBJS) -o compiler
 
 lex.o: lex.c
 	$(CC) $(CFLAGS) -c lex.c -o lex.o
@@ -33,9 +33,9 @@ bison.c: ecma-parser.y
 	cmp -s ecma-parser.tab.h tok.h || cp ecma-parser.tab.h tok.h
 
 clean:
-	rm -f *.o *~ lex.c lex.yy.c bison.c tok.h ecma-parser.tab.c ecma-parser.tab.h ecma-parser.output simple_script_language attributes.o code.o
+	rm -f *.o *~ lex.c lex.yy.c bison.c tok.h ecma-parser.tab.c ecma-parser.tab.h ecma-parser.output compiler attributes.o code.o
 
 test:
 	make clean;
 	make;
-	./simple_script_language < programExamples/correct
+	./compiler < programExamples/fatorial
