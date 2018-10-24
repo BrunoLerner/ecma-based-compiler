@@ -1,6 +1,6 @@
 # Makefile
 
-OBJS = bison.o lex.o scope.o attributes.o codegen.o
+OBJS = bison.o lex.o escopo.o attributes.o codegen.o
 
 CC = cc
 CFLAGS = -g
@@ -11,8 +11,8 @@ simple_script_language: $(OBJS)
 lex.o: lex.c
 	$(CC) $(CFLAGS) -c lex.c -o lex.o
 
-scope.o: includes/scope.c
-	$(CC) $(CFLAGS) -c includes/scope.c -o scope.o
+escopo.o: includes/escopo.c
+	$(CC) $(CFLAGS) -c includes/escopo.c -o escopo.o
 
 attributes.o: includes/attributes.c
 	$(CC) $(CFLAGS) -c includes/attributes.c -o attributes.o
@@ -27,13 +27,13 @@ lex.c: lexical.l
 bison.o: bison.c
 	$(CC) $(CFLAGS) -c bison.c -o bison.o
 
-bison.c: ecma.y
-	bison -d -v ecma.y
-	cp ecma.tab.c bison.c
-	cmp -s ecma.tab.h tok.h || cp ecma.tab.h tok.h
+bison.c: ecma-parser.y
+	bison -d -v ecma-parser.y
+	cp ecma-parser.tab.c bison.c
+	cmp -s ecma-parser.tab.h tok.h || cp ecma-parser.tab.h tok.h
 
 clean:
-	rm -f *.o *~ lex.c lex.yy.c bison.c tok.h ecma.tab.c ecma.tab.h ecma.output simple_script_language attributes.o code.o
+	rm -f *.o *~ lex.c lex.yy.c bison.c tok.h ecma-parser.tab.c ecma-parser.tab.h ecma-parser.output simple_script_language attributes.o code.o
 
 test:
 	make clean;

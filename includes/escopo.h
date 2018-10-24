@@ -1,5 +1,5 @@
-#ifndef SCOPE_H
-#define SCOPE_H
+#ifndef ESCOPO_H
+#define ESCOPO_H
 #include "./object.h"
 #define LEVELS 100
 #define IDS_PER_LEVEL 100

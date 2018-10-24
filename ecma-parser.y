@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "./ecma.tab.h"
+#include "./ecma-parser.tab.h"
 #include "./includes/shared.h"
 #include "./includes/codegen.h"
 #define db(x) printf(#x);printf(": %d\n",x);
@@ -10,7 +10,7 @@
 
 
 void yyerror(const char *error) {
-    fprintf(stderr,"error: %s\n na linha %d",error,line);
+    fprintf(stderr,"erro na linha %d: %s\n ",line,error);
 }
 
 int hadWarning = 0;
@@ -545,7 +545,7 @@ LV : LV DOT IDU
 IDD : id {
   $<_.ID_.name>$ = ids[currentLevel][secondaryToken].name;
   if( ids[currentLevel][secondaryToken].count  > 1 ) {
-    printf("scope error: trying to redefine\n");
+    printf("Erro de escopo: trying to redefine\n");
 		exit(1);
   }
 };
@@ -555,7 +555,7 @@ IDU : id {
   $<_.ID_.name>$ = name;
   $<attr.value>$ = searchName( name );
   if( $<attr.value>$ == -1 ) {
-        printf("scope warning: trying to use unexisting %s\n",name);
+        printf("Alerta de escopo: tentando usar inexistente %s\n",name);
 		hadWarning = 1;
         addName(name);
   }
